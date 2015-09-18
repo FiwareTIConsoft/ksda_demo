@@ -11,6 +11,7 @@ import org.kurento.room.api.UserNotificationService;
 import org.kurento.room.internal.Room;
 import static com.tilab.ca.sda_kurento_demo_app.exception.ExceptionHandlingUtils.wrapIfException;
 import com.tilab.ca.sda_kurento_demo_app.exception.InternalErrorCode;
+import org.kurento.room.exception.RoomException;
 
 
 public class ExtendedRoomManager extends RoomManager{
@@ -34,6 +35,18 @@ public class ExtendedRoomManager extends RoomManager{
                                      .thumbUrl(extendedRoom.getThumbUrl()));
             
         }).collect(Collectors.toList());
+    }
+    
+    public boolean roomExists(String roomName){
+        return rooms.containsKey(roomName);
+    }
+    
+    public void setRoomThumbUrl(String roomName,String roomThumbUrl){
+        if(!rooms.containsKey(roomName)){
+            throw new RoomException(RoomException.Code.ROOM_NOT_FOUND_ERROR_CODE, String.format("room %s does not exists",roomName));
+        }
+        
+        ((ExtendedRoom)rooms.get(roomName)).setThumbUrl(roomThumbUrl);
     }
     
 }

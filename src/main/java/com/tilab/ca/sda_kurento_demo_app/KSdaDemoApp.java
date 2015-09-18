@@ -10,6 +10,7 @@ import org.kurento.room.RoomManager;
 import org.kurento.room.kms.FixedOneKmsManager;
 import org.kurento.room.kms.KmsManager;
 import org.kurento.room.rpc.JsonRpcNotificationService;
+import org.kurento.room.rpc.JsonRpcUserControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -31,7 +32,8 @@ public class KSdaDemoApp {
     public static final String KMSS_URIS_PROPERTY = "kms.uris";
     public static final String KMSS_URIS_DEFAULT = "[ \"ws://localhost:8888/kurento\" ]";
 
-    private static JsonRpcNotificationService userNotificationService = new JsonRpcNotificationService();
+    private static final JsonRpcNotificationService userNotificationService = new JsonRpcNotificationService();
+    private static final JsonRpcUserControl ksdaJsonRpcUserControl = new KSdaJsonRpcUserControl();
 
     @Bean
     public KmsManager kmsManager() {
@@ -43,6 +45,11 @@ public class KSdaDemoApp {
                 + kmsWsUris);
 
         return new FixedOneKmsManager(kmsWsUris.get(0));
+    }
+
+    @Bean
+    public JsonRpcUserControl userControl() {
+        return ksdaJsonRpcUserControl;
     }
 
     @Bean
