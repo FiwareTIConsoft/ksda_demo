@@ -1,13 +1,10 @@
 package com.tilab.ca.sda_kurento_demo_app;
 
 import com.google.gson.JsonObject;
-import com.sun.org.apache.xml.internal.security.utils.Base64;
 import com.tilab.ca.sda_kurento_demo_app.internal.ExtendedRoomManager;
-import com.tilab.ca.sda_kurento_demo_app.utils.se.WsSubEndpoints;
-import com.tilab.ca.sda_kurento_demo_app.utils.se.WsSubEndpointsManager;
-import com.tilab.ca.sda_kurento_demo_app.utils.se.WsSubEndpointsParams;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Base64;
 import org.kurento.jsonrpc.Transaction;
 import org.kurento.jsonrpc.message.Request;
 import org.kurento.room.api.pojo.ParticipantRequest;
@@ -15,13 +12,9 @@ import org.kurento.room.exception.RoomException;
 import org.kurento.room.rpc.JsonRpcUserControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 public class KSdaJsonRpcUserControl extends JsonRpcUserControl {
-
-    @Autowired
-    private WsSubEndpointsManager<WsSubEndpointsParams> wsSubEndpointsManager;
 
     private static final Logger log = LoggerFactory
             .getLogger(KSdaJsonRpcUserControl.class);
@@ -29,36 +22,37 @@ public class KSdaJsonRpcUserControl extends JsonRpcUserControl {
     private static final String SUB_METHOD_JPARAM = "subMethod";
     private static final String ROOM_JPARAM = "room";
     private static final String THUMB_JPARAM = "thumbBase64";
-    
-    @Value("#{images.path}")
+
+    @Value("${images.path:./}")
     private String imagesPath;
-    
-    @Value("#{images.extension}")
+
+    @Value("${images.extension:png}")
     private String defaultImageExtension;
 
-    public KSdaJsonRpcUserControl() {
-
-    }
-
-    private void registerHandlers() {
-        //sub endpoints registration
-        wsSubEndpointsManager.registerHandler(WsSubEndpoints.TEST, params -> test(params))
-                .registerHandler(WsSubEndpoints.ROOMS_LIST, params -> getRooms(params))
-                .registerHandler(WsSubEndpoints.SET_ROOM_THUMB, params -> setRoomThumb(params));
-    }
-
+   
     @Override
     public void customRequest(Transaction transaction,
             Request<JsonObject> request, ParticipantRequest participantRequest) {
+        log.debug("entro!");
         try {
             if (request.getParams() == null
                     || request.getParams().get(SUB_METHOD_JPARAM) == null) {
                 throw new RuntimeException(SUB_METHOD_JPARAM + " parameter is missing.");
             }
+            switch (request.getParams().get(SUB_METHOD_JPARAM).getAsString()) {
+                case WsSubEndpoints.TEST:
+                    test(transaction, request, participantRequest);
+                    break;
+                case WsSubEndpoints.ROOMS_LIST:
+                    getRooms(transaction, request, participantRequest);
+                    break;
+                case WsSubEndpoints.SET_ROOM_THUMB:
+                    setRoomThumb(transaction, request, participantRequest);
+                    break;
 
-            wsSubEndpointsManager.handleRequest(request.getParams().get(SUB_METHOD_JPARAM).getAsString(), new WsSubEndpointsParams(transaction, request, participantRequest));
+            }
         } catch (Exception e) {
-            log.error("Unable to handle custom request", e);
+            log.error("Unable to handle custom request with submethod "+request.getParams().get(SUB_METHOD_JPARAM).getAsString(), e);
             try {
                 transaction.sendError(e);
             } catch (IOException e1) {
@@ -68,30 +62,34 @@ public class KSdaJsonRpcUserControl extends JsonRpcUserControl {
 
     }
 
-    public void getRooms(WsSubEndpointsParams params) throws Exception {
-        params.getTransaction().sendResponse(((ExtendedRoomManager) roomManager).getRoomInfoList());
+    public void getRooms(Transaction transaction, Request<JsonObject> request, ParticipantRequest participantRequest) throws Exception {
+        log.debug(roomManager.getClass().toString());
+        log.debug("roommanager instance of extended "+(roomManager instanceof ExtendedRoomManager));
+        transaction.sendResponse(((ExtendedRoomManager) roomManager).getRoomInfoList());
     }
 
-    public void test(WsSubEndpointsParams params) throws Exception {
-        params.getTransaction().sendResponse("It works!");
+    public void test(Transaction transaction, Request<JsonObject> request, ParticipantRequest participantRequest) throws Exception {
+        transaction.sendResponse("It works!");
     }
 
-    public void setRoomThumb(WsSubEndpointsParams params) throws Exception {
-        String roomName = params.getRequest().getParams().get(ROOM_JPARAM).getAsString();
+    public void setRoomThumb(Transaction transaction, Request<JsonObject> request, ParticipantRequest participantRequest) throws Exception {
+        String roomName = request.getParams().get(ROOM_JPARAM).getAsString();
         if (!((ExtendedRoomManager) roomManager).roomExists(roomName)) {
             throw new RoomException(RoomException.Code.ROOM_NOT_FOUND_ERROR_CODE, String.format("room %s does not exists", roomName));
         }
-        String thumbBase64 = params.getRequest().getParams().get(THUMB_JPARAM).getAsString();
-        ((ExtendedRoomManager) roomManager).setRoomThumbUrl(roomName, createNewImageAndGetPath(thumbBase64, roomName, defaultImageExtension));
-        
+        String thumbBase64 = request.getParams().get(THUMB_JPARAM).getAsString();
+        String imageName = String.format("%s_%s_%s", transaction.getSession().getSessionId(), roomName.replace("#", ""), System.currentTimeMillis());
+        ((ExtendedRoomManager) roomManager).setRoomThumbUrl(roomName, createNewImageAndGetPath(thumbBase64, imageName, defaultImageExtension));
+
     }
 
-    private String createNewImageAndGetPath(String thumbBase64, String imageName,String imageExtension) throws Exception{
-        byte[] imageBytesArray = Base64.decode(thumbBase64);
-        String imagePath = imagesPath+imageName+"."+imageExtension;
-        FileOutputStream fos = new FileOutputStream(imagePath);
-        fos.write(imageBytesArray);
-        fos.close();
+    private String createNewImageAndGetPath(String thumbBase64, String imageName, String imageExtension) throws Exception {
+        byte[] imageBytesArray = Base64.getDecoder().decode(thumbBase64);
+        String imagePath = imagesPath + imageName + "." + imageExtension;
+        log.debug("saving image on path "+imagePath);
+        try(FileOutputStream fos = new FileOutputStream(imagePath)){
+            fos.write(imageBytesArray);
+        }
         return imagePath;
     }
 

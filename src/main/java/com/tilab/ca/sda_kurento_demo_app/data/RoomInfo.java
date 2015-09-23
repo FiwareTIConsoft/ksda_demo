@@ -2,17 +2,20 @@ package com.tilab.ca.sda_kurento_demo_app.data;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.tilab.ca.sda_kurento_demo_app.utils.ZonedDateTimeJsonSerializer;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 @JsonInclude(Include.NON_NULL)
 public class RoomInfo {
+    
+    
+    private transient static final String DATE_ISO_8601_FORMAT="yyyy-MM-dd'T'HH:mm:ssX";
+    private transient static final DateTimeFormatter ISO_8601_WITH_TIMEZONE_FORMATTER = DateTimeFormatter.ofPattern(DATE_ISO_8601_FORMAT);
   
     private String roomName;
     
-    @JsonSerialize(using = ZonedDateTimeJsonSerializer.class)
-    private ZonedDateTime createdAt;
+    //@JsonSerialize(using = ZonedDateTimeJsonSerializer.class)
+    private String createdAt;
     
     private String thumbUrl;
     
@@ -29,7 +32,7 @@ public class RoomInfo {
     }
     
     public RoomInfo createdAt(ZonedDateTime createdAt){
-        this.createdAt = createdAt;
+        this.createdAt = ISO_8601_WITH_TIMEZONE_FORMATTER.format(createdAt);
         return this;
     }
     
@@ -46,7 +49,7 @@ public class RoomInfo {
         return numPartecipants;
     }
 
-    public ZonedDateTime getCreatedAt() {
+    public String getCreatedAt() {
         return createdAt;
     }
 

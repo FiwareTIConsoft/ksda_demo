@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -28,12 +27,13 @@ public class KSdaDemoApp {
             .getLogger(KSdaDemoApp.class);
 
     private static ConfigurableApplicationContext context;
-
+    
     public static final String KMSS_URIS_PROPERTY = "kms.uris";
     public static final String KMSS_URIS_DEFAULT = "[ \"ws://localhost:8888/kurento\" ]";
 
     private static final JsonRpcNotificationService userNotificationService = new JsonRpcNotificationService();
     private static final JsonRpcUserControl ksdaJsonRpcUserControl = new KSdaJsonRpcUserControl();
+    
 
     @Bean
     public KmsManager kmsManager() {

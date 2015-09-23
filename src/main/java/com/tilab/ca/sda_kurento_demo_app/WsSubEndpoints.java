@@ -1,4 +1,4 @@
-package com.tilab.ca.sda_kurento_demo_app.utils.se;
+package com.tilab.ca.sda_kurento_demo_app;
 
 
 public class WsSubEndpoints {
