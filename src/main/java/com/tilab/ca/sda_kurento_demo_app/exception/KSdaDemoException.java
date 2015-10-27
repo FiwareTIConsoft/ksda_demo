@@ -9,6 +9,11 @@ public class KSdaDemoException extends RuntimeException{
         super(ex);
         this.errorCode = errorCode;
     }
+    
+    public KSdaDemoException(InternalErrorCode errorCode) {
+        super();
+        this.errorCode = errorCode;
+    }
 
     public InternalErrorCode getErrorCode() {
         return errorCode;

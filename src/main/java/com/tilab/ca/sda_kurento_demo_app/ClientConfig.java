@@ -14,7 +14,7 @@
 
 package com.tilab.ca.sda_kurento_demo_app;
 
-class ClientConfig {
+public class ClientConfig {
 	private boolean loopbackRemote;
 	private boolean loopbackAndLocal;
 

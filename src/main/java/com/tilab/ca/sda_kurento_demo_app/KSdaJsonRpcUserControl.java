@@ -23,13 +23,9 @@ public class KSdaJsonRpcUserControl extends JsonRpcUserControl {
     private static final String ROOM_JPARAM = "room";
     private static final String THUMB_JPARAM = "thumbBase64";
 
-    @Value("${images.path:./}")
-    private String imagesPath;
+    
 
-    @Value("${images.extension:png}")
-    private String defaultImageExtension;
 
-   
     @Override
     public void customRequest(Transaction transaction,
             Request<JsonObject> request, ParticipantRequest participantRequest) {
@@ -45,9 +41,6 @@ public class KSdaJsonRpcUserControl extends JsonRpcUserControl {
                     break;
                 case WsSubEndpoints.ROOMS_LIST:
                     getRooms(transaction, request, participantRequest);
-                    break;
-                case WsSubEndpoints.SET_ROOM_THUMB:
-                    setRoomThumb(transaction, request, participantRequest);
                     break;
 
             }
@@ -70,27 +63,6 @@ public class KSdaJsonRpcUserControl extends JsonRpcUserControl {
 
     public void test(Transaction transaction, Request<JsonObject> request, ParticipantRequest participantRequest) throws Exception {
         transaction.sendResponse("It works!");
-    }
-
-    public void setRoomThumb(Transaction transaction, Request<JsonObject> request, ParticipantRequest participantRequest) throws Exception {
-        String roomName = request.getParams().get(ROOM_JPARAM).getAsString();
-        if (!((ExtendedRoomManager) roomManager).roomExists(roomName)) {
-            throw new RoomException(RoomException.Code.ROOM_NOT_FOUND_ERROR_CODE, String.format("room %s does not exists", roomName));
-        }
-        String thumbBase64 = request.getParams().get(THUMB_JPARAM).getAsString();
-        String imageName = String.format("%s_%s_%s", transaction.getSession().getSessionId(), roomName.replace("#", ""), System.currentTimeMillis());
-        ((ExtendedRoomManager) roomManager).setRoomThumbUrl(roomName, createNewImageAndGetPath(thumbBase64, imageName, defaultImageExtension));
-
-    }
-
-    private String createNewImageAndGetPath(String thumbBase64, String imageName, String imageExtension) throws Exception {
-        byte[] imageBytesArray = Base64.getDecoder().decode(thumbBase64);
-        String imagePath = imagesPath + imageName + "." + imageExtension;
-        log.debug("saving image on path "+imagePath);
-        try(FileOutputStream fos = new FileOutputStream(imagePath)){
-            fos.write(imageBytesArray);
-        }
-        return imagePath;
     }
 
 }

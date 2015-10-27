@@ -6,5 +6,5 @@ public class WsSubEndpoints {
     
     public static final String ROOMS_LIST ="roomsList";
     
-    public static final String SET_ROOM_THUMB ="setRoomThumb";
+    //public static final String SET_ROOM_THUMB ="setRoomThumb";
 }

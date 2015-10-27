@@ -11,6 +11,8 @@ import org.kurento.room.api.UserNotificationService;
 import org.kurento.room.internal.Room;
 import static com.tilab.ca.sda_kurento_demo_app.exception.ExceptionHandlingUtils.wrapIfException;
 import com.tilab.ca.sda_kurento_demo_app.exception.InternalErrorCode;
+import org.kurento.client.MediaElement;
+import org.kurento.room.api.pojo.ParticipantRequest;
 import org.kurento.room.exception.RoomException;
 
 
@@ -24,6 +26,18 @@ public class ExtendedRoomManager extends RoomManager{
     protected Room newRoom(String roomName, KurentoClient kurentoClient,RoomEventHandler roomEventHandler){
             return new ExtendedRoom(roomName, kurentoClient, roomEventHandler);
     }
+    
+    @Override
+    public void publishMedia(ParticipantRequest request, String sdpOffer,
+			boolean doLoopback, MediaElement... mediaElements) {
+        Room room = getParticipant(request).getRoom();
+        
+        if(room.getActivePublishers()>0){
+            throw new RoomException(RoomException.Code.EXISTING_USER_IN_ROOM_ERROR_CODE, String.format("In room %s there is already an active publisher",room.getName()));
+        }
+        super.publishMedia(request, sdpOffer, doLoopback, mediaElements);
+    }
+    
     
     //temporaneo da fixare con un wrapper e exception manager
     public List<RoomInfo> getRoomInfoList(){

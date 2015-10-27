@@ -5,7 +5,9 @@ import org.springframework.http.HttpStatus;
 
 public enum InternalErrorCode {
     
-    FAILED_TO_FIND_ROOM(5001,HttpStatus.INTERNAL_SERVER_ERROR);
+    FAILED_TO_FIND_ROOM(4041,HttpStatus.NOT_FOUND),
+    FILE_IS_NULL_OR_EMPTY(4011,HttpStatus.BAD_REQUEST),
+    FAILED_TO_SAVE_FILE(5001,HttpStatus.INTERNAL_SERVER_ERROR);
     
     private final int internalErrorCode;
     private final HttpStatus httpStatus;
