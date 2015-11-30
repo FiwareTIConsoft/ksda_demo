@@ -5,16 +5,12 @@ import com.tilab.ca.sda_kurento_demo_app.exception.InternalErrorCode;
 import com.tilab.ca.sda_kurento_demo_app.exception.KSdaDemoException;
 import com.tilab.ca.sda_kurento_demo_app.internal.ExtendedRoomManager;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import org.kurento.room.RoomManager;
-import org.kurento.room.exception.AdminException;
+import javax.servlet.http.HttpServletResponse;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -29,7 +25,7 @@ public class KSdaDemoController {
 			.getLogger(KSdaDemoController.class);
     
     @Autowired
-    private RoomManager roomManager;
+    private ExtendedRoomManager extendedRoomManager;
       
     @Value("${images.path:./}")
     private String imagesPath;
@@ -47,31 +43,36 @@ public class KSdaDemoController {
     
     @RequestMapping("/rooms")
     public List<RoomInfo> getRooms() {
-        return ((ExtendedRoomManager)roomManager).getRoomInfoList();
+        return extendedRoomManager.getRoomInfoList();
     }
     
     @RequestMapping(value="/rooms/{roomName}/thumb", method=RequestMethod.POST)
-    public void createRoomThumb(@PathVariable("roomName") String roomName,
-                                @RequestParam("ext") String imageExtension,
+    public RoomInfo createRoomThumb(@PathVariable("roomName") String roomName,
+                                @RequestParam(value="ext",required = false) String imageExtension,
                                 @RequestParam("thumb") MultipartFile file) {
-       ExtendedRoomManager extendedRoomManager = ((ExtendedRoomManager)roomManager);
-       if(!extendedRoomManager.getRooms().contains(roomName)){
+   
+       log.info("called createRoomThumb with roomName {}",roomName);
+       if(!extendedRoomManager.roomExists(roomName)){
            throw new KSdaDemoException(InternalErrorCode.FAILED_TO_FIND_ROOM);
        }
+       
        if (file.isEmpty()) {
            throw new KSdaDemoException(InternalErrorCode.FILE_IS_NULL_OR_EMPTY);
        }
        
        String imageName = String.format("%s_%s",roomName.replace("#", ""), System.currentTimeMillis());
+       log.info("uploading file with name "+file.getName());
        String imageExt = imageExtension!=null?imageExtension:defaultImageExtension;
-       
+       RoomInfo roomInfo = null;
         try {
             String imagePath = createNewImageAndGetPath(file.getBytes(), imageName, imageExt);
             extendedRoomManager.setRoomThumbUrl(roomName, imagePath);
+            roomInfo = extendedRoomManager.getRoomInfo(roomName);
         } catch (Exception ex) {
             throw new KSdaDemoException(InternalErrorCode.FAILED_TO_SAVE_FILE, ex);
         }
-       
+        
+       return roomInfo;
     }
 
     @RequestMapping("/getClientConfig")
@@ -85,11 +86,17 @@ public class KSdaDemoController {
     
     private String createNewImageAndGetPath(byte[] imageBytesArray, String imageName, String imageExtension) throws Exception {        
         
-        String imagePath = imagesPath + imageName + "." + imageExtension;
-        log.debug("saving image on path "+imagePath);
-        try(FileOutputStream fos = new FileOutputStream(imagePath)){
+        String imageInternalPath = imagesSavePath + imageName + "." + imageExtension;
+        String imageExtPath = imagesPath + imageName + "." + imageExtension;
+        log.debug("saving image on path "+imageInternalPath);
+        try(FileOutputStream fos = new FileOutputStream(imageInternalPath)){
             fos.write(imageBytesArray);
         }
-        return imagePath;
+        return imageExtPath;
     }
+    
+    @ModelAttribute
+    public void setCorsResponseHeader(HttpServletResponse response) {
+        response.setHeader("Access-Control-Allow-Origin", "*");
+    }    
 }

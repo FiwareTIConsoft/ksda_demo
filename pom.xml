@@ -3,8 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.tilab.ca</groupId>
     <artifactId>sda_kurento_demo_app</artifactId>
+    <!--
     <version>6.1.0</version>
+    <packaging>war</packaging>
+    -->
     <packaging>jar</packaging>
+    
     
     <parent>
         <groupId>org.kurento</groupId>
@@ -39,10 +43,31 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-log4j</artifactId>
         </dependency>
+        
+        <!--
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        
+        
+        <dependency>
+            <groupId>org.kurento</groupId>
+            <artifactId>kurento-room-client-js</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        -->
     </dependencies>
     
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

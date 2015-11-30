@@ -1,66 +1,90 @@
 package com.tilab.ca.sda_kurento_demo_app.internal;
 
 import com.tilab.ca.sda_kurento_demo_app.data.RoomInfo;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.kurento.client.KurentoClient;
-import org.kurento.room.RoomManager;
-import org.kurento.room.api.KurentoClientProvider;
-import org.kurento.room.api.RoomEventHandler;
-import org.kurento.room.api.UserNotificationService;
-import org.kurento.room.internal.Room;
 import static com.tilab.ca.sda_kurento_demo_app.exception.ExceptionHandlingUtils.wrapIfException;
 import com.tilab.ca.sda_kurento_demo_app.exception.InternalErrorCode;
-import org.kurento.client.MediaElement;
-import org.kurento.room.api.pojo.ParticipantRequest;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.kurento.room.RoomManager;
+//import org.kurento.room.NotificationRoomManager;
 import org.kurento.room.exception.RoomException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+@Service
+public class ExtendedRoomManager{
 
-public class ExtendedRoomManager extends RoomManager{
-
-    public ExtendedRoomManager(UserNotificationService notificationService, KurentoClientProvider kcProvider) {
-        super(notificationService, kcProvider);
+    @Autowired
+    private RoomManager roomManager;
+    //private NotificationRoomManager roomManager;
+    
+    private final Map<String,ExtendedRoom> extRooms = new HashMap<>();
+    
+    private static final Logger log = LoggerFactory
+            .getLogger(ExtendedRoomManager.class);
+    
+    public void addExtRoomIfNotExists(String roomName){
+        if(!extRooms.containsKey(roomName))
+            extRooms.put(roomName,new ExtendedRoom(roomName));
     }
     
-    @Override
-    protected Room newRoom(String roomName, KurentoClient kurentoClient,RoomEventHandler roomEventHandler){
-            return new ExtendedRoom(roomName, kurentoClient, roomEventHandler);
-    }
-    
-    @Override
-    public void publishMedia(ParticipantRequest request, String sdpOffer,
-			boolean doLoopback, MediaElement... mediaElements) {
-        Room room = getParticipant(request).getRoom();
-        
-        if(room.getActivePublishers()>0){
-            throw new RoomException(RoomException.Code.EXISTING_USER_IN_ROOM_ERROR_CODE, String.format("In room %s there is already an active publisher",room.getName()));
-        }
-        super.publishMedia(request, sdpOffer, doLoopback, mediaElements);
+    public void removeExtRoom(String roomName){
+        extRooms.remove(roomName);
     }
     
     
-    //temporaneo da fixare con un wrapper e exception manager
+    public void removeClosedRooms(){
+        Set<String> rooms = roomManager.getRooms();
+        extRooms.forEach((rn,extRoom) -> {
+           if(!rooms.contains(rn)){
+               log.info("room {} does not exist anymore. Removing from map..",rn);
+               extRooms.remove(rn);
+           }
+        });
+    }
+    
+    
     public List<RoomInfo> getRoomInfoList(){
-        return rooms.values().stream().map(room -> {
-            ExtendedRoom extendedRoom = (ExtendedRoom) room;
+        return extRooms.values().stream().map(extendedRoom -> {
             return wrapIfException(InternalErrorCode.FAILED_TO_FIND_ROOM,() ->new RoomInfo().roomName(extendedRoom.getName())
-                                     .numPartecipants(getParticipants(extendedRoom.getName()).size())
+                                     .numPartecipants(getNumPartecipants(extendedRoom.getName()))
                                      .createdAt(extendedRoom.getCreatedAt())
                                      .thumbUrl(extendedRoom.getThumbUrl()));
             
-        }).collect(Collectors.toList());
+        })
+        .collect(Collectors.toList());
+    }
+    
+    public RoomInfo getRoomInfo(String roomName) throws Exception{
+        if(!extRooms.containsKey(roomName))
+            throw new RoomException(RoomException.Code.ROOM_NOT_FOUND_ERROR_CODE, String.format("room %s does not exists",roomName));
+        ExtendedRoom extRoom = extRooms.get(roomName);
+        return new RoomInfo()
+                    .roomName(roomName)
+                    .createdAt(extRoom.getCreatedAt())
+                    .numPartecipants(getNumPartecipants(extRoom.getName()))
+                    .thumbUrl(extRoom.getThumbUrl());
     }
     
     public boolean roomExists(String roomName){
-        return rooms.containsKey(roomName);
+        return extRooms.containsKey(roomName);
     }
     
     public void setRoomThumbUrl(String roomName,String roomThumbUrl){
-        if(!rooms.containsKey(roomName)){
+        if(!extRooms.containsKey(roomName)){
             throw new RoomException(RoomException.Code.ROOM_NOT_FOUND_ERROR_CODE, String.format("room %s does not exists",roomName));
         }
         
-        ((ExtendedRoom)rooms.get(roomName)).setThumbUrl(roomThumbUrl);
+        extRooms.get(roomName).setThumbUrl(roomThumbUrl);
     }
     
+    public int getNumPartecipants(String roomName) throws Exception{
+        return roomManager.getParticipants(roomName).size();
+    }
+  
 }

@@ -1,15 +1,13 @@
 package com.tilab.ca.sda_kurento_demo_app;
 
 import com.google.gson.JsonArray;
-import com.tilab.ca.sda_kurento_demo_app.internal.ExtendedRoomManager;
 import java.util.List;
 import static org.kurento.commons.PropertiesManager.getPropertyJson;
 import org.kurento.jsonrpc.JsonUtils;
 import org.kurento.room.KurentoRoomServerApp;
-import org.kurento.room.RoomManager;
+import org.kurento.room.RoomJsonRpcHandler;
 import org.kurento.room.kms.FixedOneKmsManager;
 import org.kurento.room.kms.KmsManager;
-import org.kurento.room.rpc.JsonRpcNotificationService;
 import org.kurento.room.rpc.JsonRpcUserControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +16,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 @Import(KurentoRoomServerApp.class)
 public class KSdaDemoApp {
 
@@ -31,8 +31,18 @@ public class KSdaDemoApp {
     public static final String KMSS_URIS_PROPERTY = "kms.uris";
     public static final String KMSS_URIS_DEFAULT = "[ \"ws://localhost:8888/kurento\" ]";
 
-    private static final JsonRpcNotificationService userNotificationService = new JsonRpcNotificationService();
     private static final JsonRpcUserControl ksdaJsonRpcUserControl = new KSdaJsonRpcUserControl();
+    
+    
+    
+    
+    
+//    @Bean
+//    public TaskScheduler taskScheduler(){
+//        //return (TaskScheduler) context.getBean("jsonrpcTaskScheduler");
+//        return new ThreadPoolTaskScheduler();
+//    }
+    
     
 
     @Bean
@@ -51,11 +61,12 @@ public class KSdaDemoApp {
     public JsonRpcUserControl userControl() {
         return ksdaJsonRpcUserControl;
     }
-
+    
     @Bean
-    public RoomManager roomManager() {
-        return new ExtendedRoomManager(userNotificationService, kmsManager());
+    public RoomJsonRpcHandler roomHandler() {
+        return new KSdaRoomJsonRpcHandler();
     }
+
 
     public static ConfigurableApplicationContext start(Object... sources) {
 
@@ -77,4 +88,5 @@ public class KSdaDemoApp {
     public static void stop() {
         context.stop();
     }
+
 }

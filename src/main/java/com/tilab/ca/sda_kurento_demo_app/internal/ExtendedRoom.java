@@ -1,19 +1,17 @@
 package com.tilab.ca.sda_kurento_demo_app.internal;
 
 import java.time.ZonedDateTime;
-import org.kurento.client.KurentoClient;
-import org.kurento.room.api.RoomHandler;
-import org.kurento.room.internal.Room;
 
 
-public class ExtendedRoom extends Room{
+public class ExtendedRoom {
 
+    private String name;
     private ZonedDateTime createdAt;
     private String thumbUrl;
     
-    public ExtendedRoom(String roomName, KurentoClient kurentoClient, RoomHandler roomHandler) {
-        super(roomName, kurentoClient, roomHandler);
-        createdAt = ZonedDateTime.now();
+    public ExtendedRoom(String roomName) {
+        this.name = roomName;
+        this.createdAt = ZonedDateTime.now();
     }
 
     public ZonedDateTime getCreatedAt() {
@@ -31,7 +29,14 @@ public class ExtendedRoom extends Room{
     public void setThumbUrl(String thumbUrl) {
         this.thumbUrl = thumbUrl;
     }
-    
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
     
     
 }
